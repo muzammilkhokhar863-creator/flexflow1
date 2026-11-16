@@ -15,3 +15,11 @@ export async function getDevice(id) {
   const result = await getDevices();
   return (result.data || []).find(item => String(item.id) === String(id)) || null;
 }
+
+export const getRepairHistory = (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && value !== "All statuses") query.set(key, value);
+  });
+  return call(`/repairs${query.toString() ? `?${query.toString()}` : ""}`);
+};

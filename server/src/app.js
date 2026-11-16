@@ -1,6 +1,8 @@
+
 const express = require("express");
 const cors = require("cors");
 const deviceRoutes = require("./routes/deviceRoutes");
+const repairRoutes = require("./routes/repairRoutes");
 
 const app = express();
 
@@ -15,6 +17,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/devices", deviceRoutes);
+app.use("/api/repairs", repairRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {
