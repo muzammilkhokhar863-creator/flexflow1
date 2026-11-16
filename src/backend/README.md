@@ -1,42 +1,34 @@
-# FixFlow local API
+# FixFlow API
 
-This small Node.js API supports customer signup, login, logout, and checking the current session. It uses only Node's built-in libraries, so it does not need another package install.
+The local API handles customer registration, sign-in, sign-out, and session checks. It uses Node.js built-in modules and does not need extra packages.
 
-## Start the API
+## Start FixFlow
 
-Open a terminal at the React project folder and run:
-
-```powershell
-node .\src\backend\server.js
-```
-
-The API listens on `http://127.0.0.1:4000`. Check that it is running by opening `http://127.0.0.1:4000/api/health`; the response should include `"status":"ok"`.
-
-## Start the React app
-
-Open a second terminal at the project folder and run:
+From the project root, run:
 
 ```powershell
-npm run dev -- --host 127.0.0.1
+npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. Start the API first so signup and login can reach it.
+This starts the API and React app together. Open the local URL printed in the terminal. If port 5173 is busy, Vite automatically uses the next available port. The API health check is at `http://127.0.0.1:4000/api/health`. Press Ctrl+C to stop the app.
 
-## Create a manager account
+## Configure the manager account
 
-Manager access is not selected from the email address. Configure the manager account in the terminal before starting the API:
+Set these variables in the same PowerShell terminal before running `npm run dev`:
 
 ```powershell
 $env:FIXFLOW_MANAGER_EMAIL = "manager@example.com"
 $env:FIXFLOW_MANAGER_PASSWORD = "choose-a-password-with-8-or-more-characters"
 $env:FIXFLOW_MANAGER_NAME = "FixFlow Manager"
-node .\src\backend\server.js
+npm run dev
 ```
 
-The configured manager email and password are refreshed from these environment variables when the API starts. Customer signup cannot assign a manager role.
+Customer sign-up always creates a customer account. Manager credentials are only created when both email and password are configured.
+
+## Reset a password during development
+
+On the sign-in page, choose **Forgot password?**, enter the account email, and set a new password. This no-code reset is available only while the API runs locally in development. It does not send email or verify account ownership, so it is for local class testing only and is disabled in production.
 
 ## Local data and limits
 
-Customer accounts are saved in `data/users.json`. Passwords are stored as salted scrypt hashes, not as plain text. That local data folder is ignored by Git. Login sessions use HTTP-only cookies and are held in memory, so users need to sign in again after the API restarts.
-
-This file-backed API is for the class prototype. A deployed app should use a database, HTTPS, a configured allowed frontend origin, and persistent session storage.
+Customer accounts are saved in `src/backend/data/users.json`; passwords use salted scrypt hashes. This local data folder is ignored by Git. Sessions use HTTP-only cookies and are stored in memory, so users must sign in again after the API restarts. This API is for the class prototype; a deployed app needs a database, HTTPS, and persistent session storage.

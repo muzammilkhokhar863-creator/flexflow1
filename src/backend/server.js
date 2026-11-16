@@ -38,8 +38,10 @@ function sendJson(response, status, data, extraHeaders = {}) {
 
 function addCorsHeaders(request, response) {
   const origin = request.headers.origin;
+  const localDevelopmentOrigin = process.env.NODE_ENV !== 'production'
+    && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin || '');
   response.setHeader('Vary', 'Origin');
-  if (origin && allowedOrigins.has(origin)) {
+  if (origin && (allowedOrigins.has(origin) || localDevelopmentOrigin)) {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Access-Control-Allow-Credentials', 'true');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -207,7 +209,11 @@ async function handleRequest(request, response) {
   const path = new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname;
 
   if (request.method === 'GET' && path === '/api/health') {
-    sendJson(response, 200, { status: 'ok', service: 'FixFlow API' });
+    sendJson(response, 200, {
+      status: 'ok',
+      service: 'FixFlow API',
+      capabilities: { passwordReset: true },
+    });
     return;
   }
 
@@ -231,6 +237,35 @@ async function handleRequest(request, response) {
     sendJson(response, 201, { user: publicUser(user) }, {
       'Set-Cookie': sessionCookie(sessionId, Math.floor(SESSION_LENGTH / 1000)),
     });
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/auth/password-reset') {
+    const body = await readJson(request);
+    const email = normalizeEmail(body.email);
+    if (!validEmail(email)) {
+      sendJson(response, 400, { message: 'Enter a valid email address.' });
+      return;
+    }
+    if (process.env.NODE_ENV === 'production' || !['127.0.0.1', 'localhost'].includes(HOST)) {
+      sendJson(response, 503, { message: 'Password reset is available only in local development.' });
+      return;
+    }
+    if (typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 128) {
+      sendJson(response, 400, { message: 'Password must be between 8 and 128 characters.' });
+      return;
+    }
+    const user = users.find((account) => account.email === email);
+    if (!user) {
+      sendJson(response, 404, { message: 'No account found for this email.' });
+      return;
+    }
+    user.passwordHash = await hashPassword(body.password);
+    await saveUsers();
+    for (const [sessionId, session] of sessions) {
+      if (session.userId === user.id) sessions.delete(sessionId);
+    }
+    sendJson(response, 200, { message: 'Password reset. Sign in with your new password.' });
     return;
   }
 

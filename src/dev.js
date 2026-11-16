@@ -1,29 +1,44 @@
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createServer as createNetServer } from 'node:net';
 import { createServer } from 'vite';
 
 const sourceFolder = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(sourceFolder, '..');
-const apiPort = Number(process.env.PORT || 4000);
-const apiUrl = `http://127.0.0.1:${apiPort}`;
+let apiPort = Number(process.env.PORT || 4000);
+let apiUrl = `http://127.0.0.1:${apiPort}`;
 
 let apiProcess;
 let viteServer;
 let stopping = false;
 
-async function apiIsRunning() {
+async function apiSupportsPasswordReset(port = apiPort) {
   try {
-    const response = await fetch(`${apiUrl}/api/health`);
-    return response.ok;
+    const response = await fetch(`http://127.0.0.1:${port}/api/health`);
+    if (!response.ok) return false;
+    const health = await response.json();
+    return health.capabilities?.passwordReset === true;
   } catch {
     return false;
   }
 }
 
+async function findAvailablePort(startingPort) {
+  for (let port = startingPort; port < startingPort + 50; port += 1) {
+    const available = await new Promise((resolvePort) => {
+      const probe = createNetServer();
+      probe.once('error', () => resolvePort(false));
+      probe.listen(port, '127.0.0.1', () => probe.close(() => resolvePort(true)));
+    });
+    if (available) return port;
+  }
+  throw new Error('No free local API port was found. Close another local server and try again.');
+}
+
 async function waitForApi() {
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (await apiIsRunning()) return;
+    if (await apiSupportsPasswordReset()) return;
     if (apiProcess.exitCode !== null) throw new Error('The API server stopped during startup.');
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
   }
@@ -46,10 +61,16 @@ process.once('SIGINT', () => void stop(0));
 process.once('SIGTERM', () => void stop(0));
 
 try {
-  if (!(await apiIsRunning())) {
+  if (!(await apiSupportsPasswordReset())) {
+    const requestedPort = apiPort;
+    apiPort = await findAvailablePort(requestedPort);
+    apiUrl = `http://127.0.0.1:${apiPort}`;
+    if (apiPort !== requestedPort) {
+      console.log(`Port ${requestedPort} is already in use; starting the current API on ${apiPort}.`);
+    }
     apiProcess = spawn(process.execPath, ['src/backend/server.js'], {
       cwd: projectRoot,
-      env: process.env,
+      env: { ...process.env, PORT: String(apiPort) },
       stdio: 'inherit',
     });
     apiProcess.once('exit', (code) => {
@@ -63,12 +84,15 @@ try {
     console.log('Using the existing FixFlow API server.');
   }
 
+  process.env.VITE_API_BASE_URL = apiUrl;
   viteServer = await createServer({
     root: projectRoot,
-    server: { host: '127.0.0.1', port: 5173, strictPort: true },
+    logLevel: 'error',
+    server: { host: '127.0.0.1', port: 5173 },
   });
   await viteServer.listen();
-  viteServer.printUrls();
+  const address = viteServer.httpServer.address();
+  console.log(`FixFlow web app is ready at http://127.0.0.1:${address.port}`);
   console.log(`FixFlow API is ready at ${apiUrl}/api/health`);
 } catch (error) {
   console.error(error.message);

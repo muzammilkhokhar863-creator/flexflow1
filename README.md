@@ -1,16 +1,35 @@
-# React + Vite
+# FixFlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+FixFlow is a smart-device repair and tracking app built with React, Vite, and a small Node.js API.
 
-Currently, two official plugins are available:
+## Run the project
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Install the existing dependencies once, then start both the frontend and API with one command:
 
-## React Compiler
+```powershell
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Open the local URL printed in the terminal. If port 5173 is busy, Vite automatically picks the next available port. The API health check is http://127.0.0.1:4000/api/health. Press Ctrl+C to stop the app.
 
-## Expanding the ESLint configuration
+## Manager demo account
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+To create a manager account, set these variables in the same PowerShell terminal before `npm run dev`:
+
+```powershell
+$env:FIXFLOW_MANAGER_EMAIL = "manager@example.com"
+$env:FIXFLOW_MANAGER_PASSWORD = "choose-a-password-with-8-or-more-characters"
+$env:FIXFLOW_MANAGER_NAME = "FixFlow Manager"
+npm run dev
+```
+
+Customer registrations create customer accounts. Do not share real passwords in the repository.
+
+## Build
+
+```powershell
+npm run build
+```
+
+Customer data is stored locally under `src/backend/data` for this class prototype. See `src/backend/README.md` for API details and limitations.
