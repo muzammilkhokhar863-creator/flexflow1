@@ -243,7 +243,7 @@ async function handleRequest(request, response) {
     const passwordToCheck = passwordIsTooLong ? 'invalid-password' : password;
     const matches = await passwordMatches(passwordToCheck, user?.passwordHash || dummyPasswordHash);
     if (!user || passwordIsTooLong || !matches) {
-      sendJson(response, 401, { message: 'Email or password is incorrect.' });
+      sendJson(response, 401, { message: 'We could not sign you in. Check your email and password and try again.' });
       return;
     }
     const sessionId = createSession(user);

@@ -5,11 +5,12 @@ import SummaryCard from '../components/SummaryCard.jsx';
 
 function CustomerDashboard() {
   const { user } = useOutletContext();
-  const firstName = user.name.split(' ')[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
     <div className="dashboard-page">
-      <PageHeader eyebrow="CUSTOMER OVERVIEW" title={`Good morning, ${firstName}`} description="Here’s what’s happening with your devices today." action={<Link className="button" to="/new-repair"><Plus size={17} /> New repair</Link>} />
+      <PageHeader eyebrow="CUSTOMER OVERVIEW" title={`${greeting}, ${user.name}`} description="Here’s what’s happening with your devices today." action={<Link className="button" to="/new-repair"><Plus size={17} /> New repair</Link>} />
       <section className="dashboard-summary" aria-label="Repair summary">
         <SummaryCard label="Active repairs" value="—" note="Request data will appear here" icon={<Wrench size={19} />} tone="blue" />
         <SummaryCard label="Ready to collect" value="—" note="Updates will appear here" icon={<CheckCircle2 size={19} />} tone="green" />
